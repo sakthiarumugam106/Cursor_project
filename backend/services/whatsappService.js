@@ -1,11 +1,10 @@
 const twilio = require('twilio');
 require('dotenv').config();
 
-// Initialize Twilio client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+// Initialize Twilio client only if credentials exist
+const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
 
 // Support either TWILIO_WHATSAPP_FROM or TWILIO_PHONE_NUMBER for backward compatibility
 const rawFromNumber = process.env.TWILIO_WHATSAPP_FROM || process.env.TWILIO_PHONE_NUMBER || '';
@@ -23,7 +22,7 @@ const twilioPhoneNumber = rawFromNumber.startsWith('whatsapp:') ? rawFromNumber 
 const sendWhatsAppMessage = async (to, message, options = {}) => {
   try {
     // Check if WhatsApp service is configured
-    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    if (!twilioClient) {
       console.warn('WhatsApp service not configured - skipping message');
       return null;
     }
