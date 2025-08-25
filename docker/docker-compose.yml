@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: education_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: education_management
+      MYSQL_USER: education_user
+      MYSQL_PASSWORD: education_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - education_network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Backend API
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: education_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      ENVIRONMENT: dev
+      PORT: 5000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: education_management
+      DB_USER: education_user
+      DB_PASSWORD: education_pass
+      DB_DIALECT: mysql
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_REFRESH_SECRET: your-refresh-secret-key
+      TWILIO_ACCOUNT_SID: your-twilio-account-sid
+      TWILIO_AUTH_TOKEN: your-twilio-auth-token
+      TWILIO_PHONE_NUMBER: whatsapp:+14155238886
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_PORT: 587
+      EMAIL_USER: your-email@gmail.com
+      EMAIL_PASS: your-app-password
+      EMAIL_FROM: noreply@education.com
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+      - ../backend/uploads:/app/uploads
+    depends_on:
+      - mysql
+    networks:
+      - education_network
+    command: npm run dev
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: education_frontend
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      REACT_APP_ENVIRONMENT: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - education_network
+    command: npm start
+
+  # Redis for caching and sessions (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: education_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - education_network
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: education_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - education_network
+
+  # phpMyAdmin for database management (optional)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: education_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: education_user
+      PMA_PASSWORD: education_pass
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - education_network
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  education_network:
+    driver: bridge
