@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-const MySQLStore = require('connect-mysql-simple')(session);
+const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 require('dotenv').config();
 
@@ -54,7 +54,8 @@ const sessionStore = new MySQLStore({
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+  database: process.env.DB_NAME,
+  createDatabaseTable: true
 });
 
 app.use(session({
@@ -65,6 +66,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: parseInt(process.env.SESSION_COOKIE_MAX_AGE) || 24 * 60 * 60 * 1000
   }
 }));

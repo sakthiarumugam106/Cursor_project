@@ -33,7 +33,7 @@
     "uuid": "^9.0.1",
     "compression": "^1.7.4",
     "express-session": "^1.17.3",
-    "connect-mysql-simple": "^0.4.2"
+    "express-mysql-session": "^3.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",
