@@ -7,7 +7,11 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+// Support either TWILIO_WHATSAPP_FROM or TWILIO_PHONE_NUMBER for backward compatibility
+const rawFromNumber = process.env.TWILIO_WHATSAPP_FROM || process.env.TWILIO_PHONE_NUMBER || '';
+
+// Ensure the from number is prefixed with "whatsapp:" as required by Twilio's WhatsApp API
+const twilioPhoneNumber = rawFromNumber.startsWith('whatsapp:') ? rawFromNumber : (rawFromNumber ? `whatsapp:${rawFromNumber}` : undefined);
 
 /**
  * Send WhatsApp message using Twilio
@@ -31,12 +35,24 @@ const sendWhatsAppMessage = async (to, message, options = {}) => {
     }
 
     // Prepare message payload
-    const messagePayload = {
-      from: twilioPhoneNumber,
-      to: formattedPhone,
-      body: message,
-      ...options
-    };
+    // If contentSid is provided, prefer Content API (templated message)
+    const { contentSid, contentVariables, ...restOptions } = options || {};
+
+    const messagePayload = contentSid
+      ? {
+          from: twilioPhoneNumber,
+          to: formattedPhone,
+          contentSid,
+          // contentVariables must be a JSON string per Twilio API
+          ...(contentVariables ? { contentVariables: typeof contentVariables === 'string' ? contentVariables : JSON.stringify(contentVariables) } : {}),
+          ...restOptions
+        }
+      : {
+          from: twilioPhoneNumber,
+          to: formattedPhone,
+          body: message,
+          ...restOptions
+        };
 
     // Send message
     const result = await twilioClient.messages.create(messagePayload);
