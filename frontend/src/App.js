@@ -219,6 +219,18 @@ const AppContent = () => {
             <Routes>
               {/* Public Routes */}
               <Route 
+                path="/test" 
+                element={
+                  <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <h1>🎉 App is Working!</h1>
+                    <p>If you can see this, the React app is loading correctly.</p>
+                    <p>Current user: {user ? user.email : 'Not logged in'}</p>
+                    <p>Loading state: {loading ? 'Loading...' : 'Loaded'}</p>
+                    <a href="/login">Go to Login</a>
+                  </div>
+                } 
+              />
+              <Route 
                 path="/login" 
                 element={
                   <motion.div
